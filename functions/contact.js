@@ -1,32 +1,47 @@
 export async function onRequestPost(context) {
+  console.log('Contact function triggered')
+  
   try {
+    console.log('Processing form submission')
+    
     const formData = await context.request.formData()
     const name = formData.get('name')
     const email = formData.get('email')
     const subject = formData.get('subject')
     const message = formData.get('message')
+    
+    console.log('Form data received')
 
-    // Basic validation
     if (!name || !email || !subject || !message) {
+      console.log('Missing required fields')
       return new Response(JSON.stringify({ error: 'All fields are required' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       })
     }
 
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
+      console.log('Invalid email format')
       return new Response(JSON.stringify({ error: 'Invalid email format' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       })
     }
 
-    // Send email using Resend
+    console.log('Validation passed')
+
+    if (!context.env.RESEND_API_KEY || !context.env.DESTINATION_EMAIL) {
+      console.error('Missing environment variables')
+      return new Response(JSON.stringify({ error: 'Server configuration error' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
     const emailData = {
-      from: 'Portfolio Contact <onboarding@resend.dev>', // Using Resend's onboarding domain
-      to: [context.env.DESTINATION_EMAIL], // EMAIL NOW COMES FROM ENV VARIABLE
+      from: 'Portfolio Contact <onboarding@resend.dev>',
+      to: [context.env.DESTINATION_EMAIL],
       subject: `Portfolio Contact: ${subject}`,
       html: `
         <h3>New contact form submission from your portfolio</h3>
@@ -41,6 +56,8 @@ export async function onRequestPost(context) {
       reply_to: [email]
     }
 
+    console.log('Sending email')
+    
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -50,9 +67,11 @@ export async function onRequestPost(context) {
       body: JSON.stringify(emailData),
     })
 
+    console.log('Email API response:', response.status)
+
     if (!response.ok) {
       const errorData = await response.text()
-      console.error('Resend API error:', errorData)
+      console.error('Email API error:', errorData)
       return new Response(JSON.stringify({ error: 'Failed to send email' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
@@ -68,7 +87,7 @@ export async function onRequestPost(context) {
     })
 
   } catch (error) {
-    console.error('Function error:', error)
+    console.error('Function error:', error.message)
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
