@@ -8,69 +8,70 @@ export async function onRequestPost(context) {
 
     // Basic validation
     if (!name || !email || !subject || !message) {
-      return new Response('All fields are required', {
+      return new Response(JSON.stringify({ error: 'All fields are required' }), {
         status: 400,
-        headers: { 'Content-Type': 'text/plain' }
+        headers: { 'Content-Type': 'application/json' }
       })
     }
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
-      return new Response('Invalid email format', {
+      return new Response(JSON.stringify({ error: 'Invalid email format' }), {
         status: 400,
-        headers: { 'Content-Type': 'text/plain' }
+        headers: { 'Content-Type': 'application/json' }
       })
     }
 
-    // For now, we'll log the form data and return success
-    // You can integrate with an email service like Resend, SendGrid, etc.
-    console.log('Form submission:', {
-      name,
-      email,
-      subject,
-      message,
-      timestamp: new Date().toISOString()
-    })
+    // Send email using Resend
+    const emailData = {
+      from: 'Portfolio Contact <onboarding@resend.dev>', // Using Resend's onboarding domain
+      to: [context.env.DESTINATION_EMAIL], // EMAIL NOW COMES FROM ENV VARIABLE
+      subject: `Portfolio Contact: ${subject}`,
+      html: `
+        <h3>New contact form submission from your portfolio</h3>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Subject:</strong> ${subject}</p>
+        <p><strong>Message:</strong></p>
+        <p>${message.replace(/\n/g, '<br>')}</p>
+        <hr>
+        <p><small>This message was sent from your portfolio contact form.</small></p>
+      `,
+      reply_to: [email]
+    }
 
-    // TODO: Integrate with email service
-    // Example with Resend API:
-    /*
-    const emailResponse = await fetch('https://api.resend.com/emails', {
+    const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${context.env.RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        from: 'noreply@yourdomain.com',
-        to: 'a.grigolis@student.tudelft.nl',
-        subject: `Portfolio Contact: ${subject}`,
-        html: `
-          <h3>New contact form submission</h3>
-          <p><strong>Name:</strong> ${name}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Subject:</strong> ${subject}</p>
-          <p><strong>Message:</strong></p>
-          <p>${message}</p>
-        `
-      }),
+      body: JSON.stringify(emailData),
     })
 
-    if (!emailResponse.ok) {
-      throw new Error('Failed to send email')
+    if (!response.ok) {
+      const errorData = await response.text()
+      console.error('Resend API error:', errorData)
+      return new Response(JSON.stringify({ error: 'Failed to send email' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      })
     }
-    */
 
-    return new Response('Message sent successfully!', {
+    const result = await response.json()
+    console.log('Email sent successfully:', result.id)
+
+    return new Response(JSON.stringify({ success: 'Message sent successfully!' }), {
       status: 200,
-      headers: { 'Content-Type': 'text/plain' }
+      headers: { 'Content-Type': 'application/json' }
     })
+
   } catch (error) {
-    console.error('Error processing form:', error)
-    return new Response('Error processing form submission', {
+    console.error('Function error:', error)
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
-      headers: { 'Content-Type': 'text/plain' }
+      headers: { 'Content-Type': 'application/json' }
     })
   }
 }
