@@ -9,7 +9,7 @@ export async function onRequestPost(context) {
     const email = formData.get('email')
     const subject = formData.get('subject')
     const message = formData.get('message')
-    
+
     console.log('Form data received')
 
     if (!name || !email || !subject || !message) {
@@ -55,7 +55,7 @@ export async function onRequestPost(context) {
       `,
       reply_to: [email]
     }
-
+    
     console.log('Sending email')
     
     const response = await fetch('https://api.resend.com/emails', {
@@ -90,7 +90,7 @@ export async function onRequestPost(context) {
     console.error('Function error:', error.message)
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'text/plain' }
     })
   }
 }
