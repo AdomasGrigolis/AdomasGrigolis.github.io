@@ -63,7 +63,7 @@ export async function onRequestPost(context) {
       })
     }
 
-    return new Response('Your message has been sent. Thank you!', {
+    return new Response('OK', {
       status: 200,
       headers: { 'Content-Type': 'text/plain' }
     })
