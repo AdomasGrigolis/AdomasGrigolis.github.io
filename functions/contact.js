@@ -1,41 +1,30 @@
 export async function onRequestPost(context) {
-  console.log('Contact function triggered')
-  
   try {
-    console.log('Processing form submission')
-    
     const formData = await context.request.formData()
     const name = formData.get('name')
     const email = formData.get('email')
     const subject = formData.get('subject')
     const message = formData.get('message')
 
-    console.log('Form data received')
-
     if (!name || !email || !subject || !message) {
-      console.log('Missing required fields')
-      return new Response(JSON.stringify({ error: 'All fields are required' }), {
+      return new Response('All fields are required', {
         status: 400,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'text/plain' }
       })
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
-      console.log('Invalid email format')
-      return new Response(JSON.stringify({ error: 'Invalid email format' }), {
+      return new Response('Invalid email format', {
         status: 400,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'text/plain' }
       })
     }
 
-    console.log('Validation passed')
-
     if (!context.env.RESEND_API_KEY || !context.env.DESTINATION_EMAIL) {
-      console.error('Missing environment variables')
-      return new Response(JSON.stringify({ error: 'Server configuration error' }), {
+      return new Response('Server configuration error', {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'text/plain' }
       })
     }
 
@@ -56,8 +45,6 @@ export async function onRequestPost(context) {
       reply_to: [email]
     }
     
-    console.log('Sending email')
-    
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -67,28 +54,23 @@ export async function onRequestPost(context) {
       body: JSON.stringify(emailData),
     })
 
-    console.log('Email API response:', response.status)
-
     if (!response.ok) {
       const errorData = await response.text()
-      console.error('Email API error:', errorData)
-      return new Response(JSON.stringify({ error: 'Failed to send email' }), {
+      console.error('Email sending failed:', errorData)
+      return new Response('Failed to send email', {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'text/plain' }
       })
     }
 
-    const result = await response.json()
-    console.log('Email sent successfully:', result.id)
-
-    return new Response(JSON.stringify({ success: 'Message sent successfully!' }), {
+    return new Response('Your message has been sent. Thank you!', {
       status: 200,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'text/plain' }
     })
 
   } catch (error) {
     console.error('Function error:', error.message)
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+    return new Response('Internal server error', {
       status: 500,
       headers: { 'Content-Type': 'text/plain' }
     })
