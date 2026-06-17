@@ -5,6 +5,14 @@ export async function onRequestPost(context) {
     const email = formData.get('email')
     const subject = formData.get('subject')
     const message = formData.get('message')
+    const botCheck = formData.get('website_url')
+
+    if (botCheck) {
+      return new Response('OK', {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain' }
+      })
+    }
 
     if (!name || !email || !subject || !message) {
       return new Response('All fields are required', {
